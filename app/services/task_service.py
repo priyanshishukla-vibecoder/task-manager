@@ -1,40 +1,51 @@
-from app.schemas.task import TaskCreate, TaskResponse, TaskStatus
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from app.models.task import Task
+from app.schemas.task import TaskCreate, TaskStatus
 
-tasks:list[TaskResponse] = []
+  
 
-next_task_id = 1    
+def create_task(db: Session, task_data: TaskCreate) -> Task:
+ #creates a task with default status pending and adds it to the list of tasks
 
-def create_task(task_data: TaskCreate) -> TaskResponse: #creates a task with default status pending and adds it to the list of tasks
-    global next_task_id
 
-    task = TaskResponse(
-        id=next_task_id,
+    task = Task(
         title=task_data.title,
         description=task_data.description,
-        status=TaskStatus.pending, # default status when creating a task
         user_id=task_data.user_id
     )
 
-    tasks.append(task)
-    next_task_id += 1
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+
     return task
 
-def get_tasks(status: TaskStatus | None = None) -> list[TaskResponse]:  #Returns all tasks, or filters by status.
-    if status is None:
-        return tasks
-    return [task for task in tasks if task.status == status]
+def get_tasks(db: Session, status: TaskStatus | None = None) -> list[Task]:  #Returns all tasks, or filters by status.
+    statement= select(Task)
 
-def update_task_status(task_id: int, new_status: TaskStatus) -> TaskResponse | None: #Finds a task by ID and changes its status.
-    for task in tasks:
-        if task.id == task_id:
-            task.status = new_status
-            return task
-    return None
+    if status is not None:
+        statement = statement.where(Task.status == status)
+    return list(db.scalars(statement).all())
 
-def delete_task(task_id: int) -> bool: #Removes a task by ID.
-    for index, task in enumerate(tasks):
-        if task.id == task_id:
-            tasks.pop(index)
-            return True
 
-    return False
+def update_task_status(db:Session, task_id: int, status: TaskStatus) -> Task | None: #Finds a task by ID and changes its status.
+    task = db.get(Task, task_id)
+    if task is None:
+        return None
+
+    task.status = status
+    db.commit()
+    db.refresh(task)
+    return task
+
+def delete_task(db: Session, task_id: int) -> bool: #Removes a task by ID.
+    task = db.get(Task, task_id)
+    if task is None:
+        return False
+
+    db.delete(task)
+    db.commit()
+    return True
+
+  
