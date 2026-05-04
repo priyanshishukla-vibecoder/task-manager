@@ -1,122 +1,118 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react';
+
+import { createTask, deleteTask, getTasks, updateTaskStatus } from './api/tasks';
+import { createUser, getUsers } from './api/users';
+import TaskForm from './components/TaskForm';
+import TaskList from './components/TaskList';
+import UserForm from './components/UserForm';
+import UserList from './components/UserList';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [users, setUsers] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [message, setMessage] = useState('');
+
+  async function loadUsers() {
+    const userData = await getUsers();
+    setUsers(userData);
+  }
+
+  async function loadTasks(status = statusFilter) {
+    const taskData = await getTasks(status);
+    setTasks(taskData);
+  }
+
+  async function handleCreateUser(userData) {
+    try {
+      const user = await createUser(userData);
+      setMessage(`User created: ${user.name}`);
+      await loadUsers();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleCreateTask(taskData) {
+    try {
+      const task = await createTask(taskData);
+      setMessage(`Task created: ${task.title}`);
+      await loadTasks();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleUpdateStatus(taskId, status) {
+    try {
+      await updateTaskStatus(taskId, status);
+      setMessage('Task status updated');
+      await loadTasks();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleDeleteTask(taskId) {
+    try {
+      await deleteTask(taskId);
+      setMessage('Task deleted');
+      await loadTasks();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleStatusFilterChange(event) {
+    const selectedStatus = event.target.value;
+    setStatusFilter(selectedStatus);
+    await loadTasks(selectedStatus);
+  }
+
+  useEffect(() => {
+    loadUsers();
+    loadTasks('');
+  }, []);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <main className="app-shell">
+      <header className="app-header">
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <p className="eyebrow">FastAPI + React + PostgreSQL</p>
+          <h1>Task Manager</h1>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+      </header>
+
+      {message && <p className="message">{message}</p>}
+
+      <section className="grid">
+        <UserForm onCreateUser={handleCreateUser} />
+        <TaskForm users={users} onCreateTask={handleCreateTask} />
       </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
+      <section className="toolbar">
+        <label>
+          Filter tasks
+          <select value={statusFilter} onChange={handleStatusFilterChange}>
+            <option value="">All</option>
+            <option value="pending">pending</option>
+            <option value="in_progress">in_progress</option>
+            <option value="done">done</option>
+          </select>
+        </label>
       </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <section className="grid">
+        <UserList users={users} />
+        <TaskList
+          tasks={tasks}
+          onUpdateStatus={handleUpdateStatus}
+          onDeleteTask={handleDeleteTask}
+        />
+      </section>
+    </main>
+  );
 }
 
-export default App
+export default App;
