@@ -1,14 +1,19 @@
 __pycache__/
-*.py[cod] #ignores compiled Python files like .pyc
 
-.venv/ #ignores local virtual environments
+#ignores compiled Python files like .pyc
+*.py[cod] 
+
+#ignores local virtual environments
+.venv/ 
 venv/
 
-.env #ignores secret config like database passwords
+.env
 
-node_modules/  #react dependencies live here, and this folder can be huge
+#react dependencies live here, and this folder can be huge
+node_modules/  
 dist/ #frontend production build output
 build/
 
-.DS_Store #os junk files
+#os junk files
+.DS_Store 
 Thumbs.db
