@@ -137,6 +137,42 @@ Open Swagger docs:
 ```text
 http://127.0.0.1:8000/docs
 ```
+### 7. Run React Frontend
+
+Open a second terminal from the project root.
+
+Go to the frontend folder:
+
+```powershell
+cd frontend
+```
+
+Install frontend dependencies if they are not already installed:
+
+```powershell
+npm install
+```
+
+Run the React development server:
+
+```powershell
+npm run dev
+```
+
+Open the frontend app:
+
+```text
+http://localhost:5173
+```
+
+The React app calls the FastAPI backend at:
+
+```text
+http://127.0.0.1:8000
+```
+
+Make sure the FastAPI backend is running before using the frontend.
+
 
 ## API Endpoints
 
@@ -257,3 +293,5 @@ git push origin main
 - `.env.example` is committed as a safe template.
 - PostgreSQL must be running before starting the API.
 - Docker Compose setup is planned, but local PostgreSQL is currently used.
+- The frontend runs on `http://localhost:5173` and calls the backend at `http://127.0.0.1:8000`.
+
