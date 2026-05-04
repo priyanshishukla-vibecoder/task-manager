@@ -1,17 +1,33 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, HTTPException
 
 from app.schemas.user import UserCreate, UserResponse
-from app.services.user_service import create_user, get_users
+from app.services.user_service import create_user, get_users, get_user_by_email
 
 router= APIRouter(
     prefix="/users",
     tags=["Users"]
 )
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", 
+    response_model=UserResponse, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Create user"
+)
+
 def create_user_endpoint(user_data: UserCreate) -> UserResponse:
+    existing_user=get_user_by_email(user_data.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists"
+        )
     return create_user(user_data)
 
-@router.get("", response_model=list[UserResponse])
+@router.get(
+    "", 
+    response_model=list[UserResponse],
+    summary="List users"
+)
 def get_users_endpoint() -> list[UserResponse]:
     return get_users()
