@@ -59,6 +59,21 @@ h2 {
   display: grid;
   gap: 14px;
 }
+.search-form {
+  display: grid;
+  gap: 14px;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+}
+
+.secondary-button {
+  color: #1f2937;
+  background: #e5e7eb;
+}
+
 
 label {
   display: grid;

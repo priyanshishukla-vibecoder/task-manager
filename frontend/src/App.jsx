@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 
-import { createTask, deleteTask, getTasks, updateTaskStatus } from './api/tasks';
+import {
+  createTask,
+  deleteTask,
+  getTasks,
+  getTasksByUserEmail,
+  updateTaskStatus,
+} from './api/tasks';
 import { createUser, getUsers } from './api/users';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import UserForm from './components/UserForm';
 import UserList from './components/UserList';
+import UserTaskSearch from './components/UserTaskSearch';
 import './App.css';
 
 function App() {
@@ -64,6 +71,27 @@ function App() {
     }
   }
 
+  async function handleViewTasksByEmail(email) {
+    try {
+      const taskData = await getTasksByUserEmail(email);
+      setTasks(taskData);
+      setStatusFilter('');
+      setMessage(`Showing tasks for ${email}`);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleShowAllTasks() {
+    try {
+      setStatusFilter('');
+      await loadTasks('');
+      setMessage('Showing all tasks');
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
   async function handleStatusFilterChange(event) {
     const selectedStatus = event.target.value;
     setStatusFilter(selectedStatus);
@@ -90,6 +118,11 @@ function App() {
         <UserForm onCreateUser={handleCreateUser} />
         <TaskForm users={users} onCreateTask={handleCreateTask} />
       </section>
+
+      <UserTaskSearch
+        onViewTasks={handleViewTasksByEmail}
+        onShowAllTasks={handleShowAllTasks}
+      />
 
       <section className="toolbar">
         <label>
