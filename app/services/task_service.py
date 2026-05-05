@@ -48,6 +48,4 @@ def delete_task(db: Session, task_id: int) -> bool: #Removes a task by ID.
     db.commit()
     return True
 
-def get_tasks_by_user_id(db: Session, user_id: int) -> list[Task]:
-    statement = select(Task).where(Task.user_id == user_id)
-    return list(db.scalars(statement).all())
+  

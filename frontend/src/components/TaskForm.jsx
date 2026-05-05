@@ -1,33 +1,27 @@
 import { useState } from 'react';
 
-function TaskForm({ selectedUser, onCreateTask }) {
+function TaskForm({ users, onCreateTask }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [userId, setUserId] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!selectedUser) {
-      return;
-    }
-
     await onCreateTask({
       title,
       description: description || null,
-      user_id: selectedUser.id,
+      user_id: Number(userId),
     });
 
     setTitle('');
     setDescription('');
+    setUserId('');
   }
 
   return (
     <form className="form" onSubmit={handleSubmit}>
       <h2>Create Task</h2>
-
-      {!selectedUser && (
-        <p className="empty">Enter your email first to create tasks.</p>
-      )}
 
       <label>
         Title
@@ -36,7 +30,6 @@ function TaskForm({ selectedUser, onCreateTask }) {
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           required
-          disabled={!selectedUser}
         />
       </label>
 
@@ -45,11 +38,26 @@ function TaskForm({ selectedUser, onCreateTask }) {
         <textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          disabled={!selectedUser}
         />
       </label>
 
-      <button type="submit" disabled={!selectedUser}>
+      <label>
+        User
+        <select
+          value={userId}
+          onChange={(event) => setUserId(event.target.value)}
+          required
+        >
+          <option value="">Select user</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <button type="submit" disabled={users.length === 0}>
         Create Task
       </button>
     </form>

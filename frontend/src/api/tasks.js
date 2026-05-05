@@ -12,20 +12,6 @@ export async function getTasks(status) {
   return response.json();
 }
 
-export async function getTasksByUserEmail(email) {
-  const response = await fetch(
-    `${API_BASE_URL}/tasks/by-user-email?email=${encodeURIComponent(email)}`,
-  );
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to fetch user tasks');
-  }
-
-  return response.json();
-}
-
-
 export async function createTask(taskData) {
   const response = await fetch(`${API_BASE_URL}/tasks`, {
     method: 'POST',

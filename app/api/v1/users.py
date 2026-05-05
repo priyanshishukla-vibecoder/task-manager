@@ -40,22 +40,3 @@ def get_users_endpoint(
 ) -> list[UserResponse]:
     
     return get_users(db)
-
-@router.get(
-    "/by-email",
-    response_model=UserResponse,
-    summary="Get user by email",
-)
-def get_user_by_email_endpoint(
-    email: str,
-    db: Session = Depends(get_db),
-) -> UserResponse:
-    user = get_user_by_email(db, email)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
-    return user

@@ -1,54 +1,34 @@
 import { useEffect, useState } from 'react';
 
-import {
-  createTask,
-  deleteTask,
-  getTasksByUserEmail,
-  updateTaskStatus,
-} from './api/tasks';
-import { createUser, getUserByEmail } from './api/users';
+import { createTask, deleteTask, getTasks, updateTaskStatus } from './api/tasks';
+import { createUser, getUsers } from './api/users';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import UserForm from './components/UserForm';
-import UserTaskSearch from './components/UserTaskSearch';
+import UserList from './components/UserList';
 import './App.css';
 
 function App() {
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [users, setUsers] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('');
   const [message, setMessage] = useState('');
 
-  async function loadUserWorkspace(email) {
-    const user = await getUserByEmail(email);
-    const taskData = await getTasksByUserEmail(email);
+  async function loadUsers() {
+    const userData = await getUsers();
+    setUsers(userData);
+  }
 
-    setSelectedUser(user);
+  async function loadTasks(status = statusFilter) {
+    const taskData = await getTasks(status);
     setTasks(taskData);
-    setMessage(`Showing workspace for ${user.name}`);
-  }
-
-  async function handleFindUser(email) {
-    try {
-      await loadUserWorkspace(email);
-    } catch (error) {
-      setSelectedUser(null);
-      setTasks([]);
-      setMessage(`${error.message}. Create the user below.`);
-    }
-  }
-
-  async function handleClearUser() {
-    setSelectedUser(null);
-    setTasks([]);
-    setMessage('Workspace cleared');
   }
 
   async function handleCreateUser(userData) {
     try {
       const user = await createUser(userData);
-      setSelectedUser(user);
-      setTasks([]);
       setMessage(`User created: ${user.name}`);
+      await loadUsers();
     } catch (error) {
       setMessage(error.message);
     }
@@ -58,10 +38,7 @@ function App() {
     try {
       const task = await createTask(taskData);
       setMessage(`Task created: ${task.title}`);
-
-      if (selectedUser) {
-        await loadUserWorkspace(selectedUser.email);
-      }
+      await loadTasks();
     } catch (error) {
       setMessage(error.message);
     }
@@ -71,10 +48,7 @@ function App() {
     try {
       await updateTaskStatus(taskId, status);
       setMessage('Task status updated');
-
-      if (selectedUser) {
-        await loadUserWorkspace(selectedUser.email);
-      }
+      await loadTasks();
     } catch (error) {
       setMessage(error.message);
     }
@@ -84,44 +58,53 @@ function App() {
     try {
       await deleteTask(taskId);
       setMessage('Task deleted');
-
-      if (selectedUser) {
-        await loadUserWorkspace(selectedUser.email);
-      }
+      await loadTasks();
     } catch (error) {
       setMessage(error.message);
     }
   }
 
+  async function handleStatusFilterChange(event) {
+    const selectedStatus = event.target.value;
+    setStatusFilter(selectedStatus);
+    await loadTasks(selectedStatus);
+  }
+
   useEffect(() => {
-    setMessage('Enter your email to open your workspace.');
+    loadUsers();
+    loadTasks('');
   }, []);
 
   return (
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow"></p>
+          <p className="eyebrow">FastAPI + React + PostgreSQL</p>
           <h1>Task Manager</h1>
         </div>
       </header>
 
       {message && <p className="message">{message}</p>}
 
-      <UserTaskSearch
-        selectedUser={selectedUser}
-        onFindUser={handleFindUser}
-        onClearUser={handleClearUser}
-      />
+      <section className="grid">
+        <UserForm onCreateUser={handleCreateUser} />
+        <TaskForm users={users} onCreateTask={handleCreateTask} />
+      </section>
 
-      {!selectedUser && (
-        <section className="grid single-column">
-          <UserForm onCreateUser={handleCreateUser} />
-        </section>
-      )}
+      <section className="toolbar">
+        <label>
+          Filter tasks
+          <select value={statusFilter} onChange={handleStatusFilterChange}>
+            <option value="">All</option>
+            <option value="pending">pending</option>
+            <option value="in_progress">in_progress</option>
+            <option value="done">done</option>
+          </select>
+        </label>
+      </section>
 
       <section className="grid">
-        <TaskForm selectedUser={selectedUser} onCreateTask={handleCreateTask} />
+        <UserList users={users} />
         <TaskList
           tasks={tasks}
           onUpdateStatus={handleUpdateStatus}
