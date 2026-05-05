@@ -1,37 +1,55 @@
+const statusLabels = {
+  pending: 'Pending',
+  in_progress: 'In Progress',
+  done: 'Done',
+};
+
 function TaskList({ tasks, onUpdateStatus, onDeleteTask }) {
   return (
     <section className="panel">
-      <h2>Tasks</h2>
+      <div className="section-heading">
+        <div>
+          <h2>Your Tasks</h2>
+          <p>{tasks.length} task{tasks.length === 1 ? '' : 's'} in this workspace</p>
+        </div>
+      </div>
 
       {tasks.length === 0 ? (
-        <p className="empty">No tasks found.</p>
+        <div className="empty-state">
+          <strong>No tasks yet</strong>
+          <span>Create your first task to start tracking work.</span>
+        </div>
       ) : (
-        <ul className="list">
+        <div className="task-card-list">
           {tasks.map((task) => (
-            <li key={task.id} className="task-item">
-              <div>
-                <strong>{task.title}</strong>
-                <p>{task.description || 'No description'}</p>
-                <span>User ID: {task.user_id}</span>
+            <article key={task.id} className="task-row-card">
+              <div className="task-row-content">
+                <h3>{task.title}</h3>
+                <p>{task.description || 'No description added.'}</p>
               </div>
 
-              <div className="task-actions">
+              <div className="task-row-actions">
                 <select
+                  className={`status-select status-${task.status}`}
                   value={task.status}
                   onChange={(event) => onUpdateStatus(task.id, event.target.value)}
                 >
-                  <option value="pending">pending</option>
-                  <option value="in_progress">in_progress</option>
-                  <option value="done">done</option>
+                  <option value="pending">{statusLabels.pending}</option>
+                  <option value="in_progress">{statusLabels.in_progress}</option>
+                  <option value="done">{statusLabels.done}</option>
                 </select>
 
-                <button type="button" onClick={() => onDeleteTask(task.id)}>
+                <button
+                  type="button"
+                  className="danger-button compact-button"
+                  onClick={() => onDeleteTask(task.id)}
+                >
                   Delete
                 </button>
               </div>
-            </li>
+            </article>
           ))}
-        </ul>
+        </div>
       )}
     </section>
   );

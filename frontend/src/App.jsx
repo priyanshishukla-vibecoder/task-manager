@@ -120,14 +120,15 @@ function App() {
         </section>
       )}
 
-      <section className="grid">
-        <TaskForm selectedUser={selectedUser} onCreateTask={handleCreateTask} />
-        <TaskList
-          tasks={tasks}
-          onUpdateStatus={handleUpdateStatus}
-          onDeleteTask={handleDeleteTask}
-        />
-      </section>
+      <section className="workspace-stack">
+      <TaskForm selectedUser={selectedUser} onCreateTask={handleCreateTask} />
+      <TaskList
+        tasks={tasks}
+        onUpdateStatus={handleUpdateStatus}
+        onDeleteTask={handleDeleteTask}
+      />
+    </section>
+
     </main>
   );
 }
