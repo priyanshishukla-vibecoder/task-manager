@@ -3,8 +3,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.task import TaskCreate, TaskResponse, TaskStatus, TaskStatusUpdate
-from app.services.task_service import create_task, get_tasks, update_task_status, delete_task
-from app.services.user_service import get_user_by_id
+from app.services.task_service import (
+    create_task,
+    delete_task,
+    get_tasks,
+    get_tasks_by_user_id,
+    update_task_status,
+)
+
+from app.services.user_service import get_user_by_email, get_user_by_id
+
 
 
 router = APIRouter(
@@ -37,6 +45,25 @@ def get_tasks_endpoint(
     db: Session=Depends(get_db)
 ) -> list[TaskResponse]:
     return get_tasks(db, status_filter) 
+
+@router.get(
+    "/by-user-email",
+    response_model=list[TaskResponse],
+    summary="List tasks by user email",
+)
+def get_tasks_by_user_email_endpoint(
+    email: str,
+    db: Session = Depends(get_db),
+) -> list[TaskResponse]:
+    user = get_user_by_email(db, email)
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    return get_tasks_by_user_id(db, user.id)
 
 
 @router.patch(
