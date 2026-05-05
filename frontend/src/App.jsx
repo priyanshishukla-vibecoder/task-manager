@@ -3,39 +3,52 @@ import { useEffect, useState } from 'react';
 import {
   createTask,
   deleteTask,
-  getTasks,
   getTasksByUserEmail,
   updateTaskStatus,
 } from './api/tasks';
-import { createUser, getUsers } from './api/users';
+import { createUser, getUserByEmail } from './api/users';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import UserForm from './components/UserForm';
-import UserList from './components/UserList';
 import UserTaskSearch from './components/UserTaskSearch';
 import './App.css';
 
 function App() {
-  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('');
   const [message, setMessage] = useState('');
 
-  async function loadUsers() {
-    const userData = await getUsers();
-    setUsers(userData);
+  async function loadUserWorkspace(email) {
+    const user = await getUserByEmail(email);
+    const taskData = await getTasksByUserEmail(email);
+
+    setSelectedUser(user);
+    setTasks(taskData);
+    setMessage(`Showing workspace for ${user.name}`);
   }
 
-  async function loadTasks(status = statusFilter) {
-    const taskData = await getTasks(status);
-    setTasks(taskData);
+  async function handleFindUser(email) {
+    try {
+      await loadUserWorkspace(email);
+    } catch (error) {
+      setSelectedUser(null);
+      setTasks([]);
+      setMessage(`${error.message}. Create the user below.`);
+    }
+  }
+
+  async function handleClearUser() {
+    setSelectedUser(null);
+    setTasks([]);
+    setMessage('Workspace cleared');
   }
 
   async function handleCreateUser(userData) {
     try {
       const user = await createUser(userData);
+      setSelectedUser(user);
+      setTasks([]);
       setMessage(`User created: ${user.name}`);
-      await loadUsers();
     } catch (error) {
       setMessage(error.message);
     }
@@ -45,7 +58,10 @@ function App() {
     try {
       const task = await createTask(taskData);
       setMessage(`Task created: ${task.title}`);
-      await loadTasks();
+
+      if (selectedUser) {
+        await loadUserWorkspace(selectedUser.email);
+      }
     } catch (error) {
       setMessage(error.message);
     }
@@ -55,7 +71,10 @@ function App() {
     try {
       await updateTaskStatus(taskId, status);
       setMessage('Task status updated');
-      await loadTasks();
+
+      if (selectedUser) {
+        await loadUserWorkspace(selectedUser.email);
+      }
     } catch (error) {
       setMessage(error.message);
     }
@@ -65,79 +84,44 @@ function App() {
     try {
       await deleteTask(taskId);
       setMessage('Task deleted');
-      await loadTasks();
+
+      if (selectedUser) {
+        await loadUserWorkspace(selectedUser.email);
+      }
     } catch (error) {
       setMessage(error.message);
     }
-  }
-
-  async function handleViewTasksByEmail(email) {
-    try {
-      const taskData = await getTasksByUserEmail(email);
-      setTasks(taskData);
-      setStatusFilter('');
-      setMessage(`Showing tasks for ${email}`);
-    } catch (error) {
-      setMessage(error.message);
-    }
-  }
-
-  async function handleShowAllTasks() {
-    try {
-      setStatusFilter('');
-      await loadTasks('');
-      setMessage('Showing all tasks');
-    } catch (error) {
-      setMessage(error.message);
-    }
-  }
-
-  async function handleStatusFilterChange(event) {
-    const selectedStatus = event.target.value;
-    setStatusFilter(selectedStatus);
-    await loadTasks(selectedStatus);
   }
 
   useEffect(() => {
-    loadUsers();
-    loadTasks('');
+    setMessage('Enter your email to open your workspace.');
   }, []);
 
   return (
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">FastAPI + React + PostgreSQL</p>
+          <p className="eyebrow"></p>
           <h1>Task Manager</h1>
         </div>
       </header>
 
       {message && <p className="message">{message}</p>}
 
-      <section className="grid">
-        <UserForm onCreateUser={handleCreateUser} />
-        <TaskForm users={users} onCreateTask={handleCreateTask} />
-      </section>
-
       <UserTaskSearch
-        onViewTasks={handleViewTasksByEmail}
-        onShowAllTasks={handleShowAllTasks}
+        selectedUser={selectedUser}
+        onFindUser={handleFindUser}
+        onClearUser={handleClearUser}
       />
 
-      <section className="toolbar">
-        <label>
-          Filter tasks
-          <select value={statusFilter} onChange={handleStatusFilterChange}>
-            <option value="">All</option>
-            <option value="pending">pending</option>
-            <option value="in_progress">in_progress</option>
-            <option value="done">done</option>
-          </select>
-        </label>
-      </section>
+      {!selectedUser && (
+        <section className="grid single-column">
+          <UserForm onCreateUser={handleCreateUser} />
+        </section>
+      )}
 
       <section className="grid">
-        <UserList users={users} />
+        <TaskForm selectedUser={selectedUser} onCreateTask={handleCreateTask} />
         <TaskList
           tasks={tasks}
           onUpdateStatus={handleUpdateStatus}

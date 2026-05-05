@@ -1,23 +1,23 @@
 import { useState } from 'react';
 
-function UserTaskSearch({ onViewTasks, onShowAllTasks }) {
+function UserTaskSearch({ onFindUser, onClearUser, selectedUser }) {
   const [email, setEmail] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
-    await onViewTasks(email);
+    await onFindUser(email);
   }
 
-  function handleShowAll() {
+  function handleClear() {
     setEmail('');
-    onShowAllTasks();
+    onClearUser();
   }
 
   return (
     <section className="toolbar">
       <form className="search-form" onSubmit={handleSubmit}>
         <label>
-          View tasks by user email
+          Enter your email to view your workspace
           <input
             type="email"
             value={email}
@@ -28,12 +28,19 @@ function UserTaskSearch({ onViewTasks, onShowAllTasks }) {
         </label>
 
         <div className="button-row">
-          <button type="submit">View Tasks</button>
-          <button type="button" className="secondary-button" onClick={handleShowAll}>
-            Show All
+          <button type="submit">View My Tasks</button>
+          <button type="button" className="secondary-button" onClick={handleClear}>
+            Clear
           </button>
         </div>
       </form>
+
+      {selectedUser && (
+        <div className="selected-user">
+          <strong>{selectedUser.name}</strong>
+          <span>{selectedUser.email}</span>
+        </div>
+      )}
     </section>
   );
 }
