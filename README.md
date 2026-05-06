@@ -13,16 +13,18 @@ A learning-focused full-stack task manager built with FastAPI, React, and Postgr
 
 ## Current Status
 
-The backend currently supports:
+The application currently supports:
 
 - Create users
-- List users
+- Find users by email
 - Create tasks
 - List tasks
+- View tasks by user email
 - Filter tasks by status
 - Update task status
 - Delete tasks
 - Store users and tasks in PostgreSQL
+- React frontend connected to FastAPI backend
 
 ## Project Structure
 
@@ -30,8 +32,11 @@ The backend currently supports:
 app/
   main.py
   api/
-    users.py
-    tasks.py
+    router.py
+    v1/
+      router.py
+      users.py
+      tasks.py
   core/
     config.py
   db/
@@ -46,6 +51,10 @@ app/
   services/
     user_service.py
     task_service.py
+frontend/
+  src/
+    api/
+    components/
 scripts/
   create_tables.py
 ```
@@ -53,12 +62,14 @@ scripts/
 ## Folder Responsibilities
 
 - `app/main.py`: FastAPI application entry point.
-- `app/api/`: API route files.
+- `app/api/`: API routing setup.
+- `app/api/v1/`: Version 1 API route files.
 - `app/core/`: Application configuration.
 - `app/db/`: Database base and session setup.
 - `app/models/`: SQLAlchemy database table models.
 - `app/schemas/`: Pydantic request and response schemas.
 - `app/services/`: Business logic and database operations.
+- `frontend/`: React frontend application.
 - `scripts/`: Utility scripts.
 
 ## Setup Instructions
@@ -75,13 +86,13 @@ Activate it:
 .venv\Scripts\Activate
 ```
 
-### 2. Install Dependencies
+### 2. Install Backend Dependencies
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-### 3. Create `.env`
+### 3. Create Backend `.env`
 
 Create a `.env` file in the project root:
 
@@ -129,15 +140,30 @@ Database Tables created successfully.
 ### 6. Run FastAPI Server
 
 ```powershell
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
 Open Swagger docs:
 
 ```text
-http://127.0.0.1:8000/docs
+http://127.0.0.1:8001/docs
 ```
-### 7. Run React Frontend
+
+### 7. Create Frontend `.env`
+
+Create a `.env` file inside the `frontend/` folder:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8001/api/v1
+```
+
+A safe template is available at:
+
+```text
+frontend/.env.example
+```
+
+### 8. Run React Frontend
 
 Open a second terminal from the project root.
 
@@ -165,38 +191,52 @@ Open the frontend app:
 http://localhost:5173
 ```
 
-The React app calls the FastAPI backend at:
+The React app calls the FastAPI backend using:
 
 ```text
-http://127.0.0.1:8000
+VITE_API_BASE_URL
 ```
 
 Make sure the FastAPI backend is running before using the frontend.
 
-
 ## API Endpoints
+
+Base backend URL:
+
+```text
+http://127.0.0.1:8001
+```
+
+Base API URL:
+
+```text
+http://127.0.0.1:8001/api/v1
+```
+
+### Root
+
+```http
+GET /
+```
 
 ### Users
 
 Create user:
 
 ```http
-POST /users
-```
-
-Example body:
-
-```json
-{
-  "name": "Priyanshi",
-  "email": "priyanshi@example.com"
-}
+POST /api/v1/users
 ```
 
 List users:
 
 ```http
-GET /users
+GET /api/v1/users
+```
+
+Get user by email:
+
+```http
+GET /api/v1/users/by-email?email={email}
 ```
 
 ### Tasks
@@ -204,29 +244,19 @@ GET /users
 Create task:
 
 ```http
-POST /tasks
-```
-
-Example body:
-
-```json
-{
-  "title": "Learn FastAPI",
-  "description": "Practice building APIs",
-  "user_id": 1
-}
+POST /api/v1/tasks
 ```
 
 List tasks:
 
 ```http
-GET /tasks
+GET /api/v1/tasks
 ```
 
 Filter tasks by status:
 
 ```http
-GET /tasks?status=pending
+GET /api/v1/tasks?status=pending
 ```
 
 Allowed statuses:
@@ -237,13 +267,261 @@ in_progress
 done
 ```
 
+Get tasks by user email:
+
+```http
+GET /api/v1/tasks/by-user-email?email={email}
+```
+
 Update task status:
 
 ```http
-PATCH /tasks/{task_id}/status
+PATCH /api/v1/tasks/{task_id}/status
 ```
 
-Example body:
+Delete task:
+
+```http
+DELETE /api/v1/tasks/{task_id}
+```
+
+## Postman API Testing Guide
+
+Base backend URL:
+
+```text
+http://127.0.0.1:8001
+```
+
+Base API URL:
+
+```text
+http://127.0.0.1:8001/api/v1
+```
+
+### 1. Root Health Check
+
+```http
+GET /
+```
+
+URL:
+
+```text
+http://127.0.0.1:8001/
+```
+
+Expected status:
+
+```text
+200 OK
+```
+
+Expected response:
+
+```json
+{
+  "message": "Task Manager API is running"
+}
+```
+
+### 2. Create User
+
+```http
+POST /api/v1/users
+```
+
+Body:
+
+```json
+{
+  "name": "Postman User",
+  "email": "postman.user@example.com"
+}
+```
+
+Expected status:
+
+```text
+201 Created
+```
+
+Example response:
+
+```json
+{
+  "id": 5,
+  "name": "Postman User",
+  "email": "postman.user@example.com"
+}
+```
+
+### 3. List Users
+
+```http
+GET /api/v1/users
+```
+
+Expected status:
+
+```text
+200 OK
+```
+
+Example response:
+
+```json
+[
+  {
+    "id": 5,
+    "name": "Postman User",
+    "email": "postman.user@example.com"
+  }
+]
+```
+
+### 4. Get User By Email
+
+```http
+GET /api/v1/users/by-email?email=postman.user@example.com
+```
+
+Expected status:
+
+```text
+200 OK
+```
+
+Example response:
+
+```json
+{
+  "id": 5,
+  "name": "Postman User",
+  "email": "postman.user@example.com"
+}
+```
+
+### 5. Duplicate User Email Validation
+
+```http
+POST /api/v1/users
+```
+
+Body:
+
+```json
+{
+  "name": "Postman User",
+  "email": "postman.user@example.com"
+}
+```
+
+Expected status:
+
+```text
+400 Bad Request
+```
+
+Example response:
+
+```json
+{
+  "detail": "User with this email already exists"
+}
+```
+
+### 6. Create Task
+
+```http
+POST /api/v1/tasks
+```
+
+Body:
+
+```json
+{
+  "title": "Test task from Postman",
+  "description": "This task was created while testing the API in Postman.",
+  "user_id": 5
+}
+```
+
+Expected status:
+
+```text
+201 Created
+```
+
+Example response:
+
+```json
+{
+  "id": 9,
+  "title": "Test task from Postman",
+  "description": "This task was created while testing the API in Postman.",
+  "status": "pending",
+  "user_id": 5
+}
+```
+
+### 7. List Tasks
+
+```http
+GET /api/v1/tasks
+```
+
+Expected status:
+
+```text
+200 OK
+```
+
+### 8. Filter Tasks By Status
+
+```http
+GET /api/v1/tasks?status=pending
+```
+
+Allowed status values:
+
+```text
+pending
+in_progress
+done
+```
+
+Expected status:
+
+```text
+200 OK
+```
+
+### 9. Get Tasks By User Email
+
+```http
+GET /api/v1/tasks/by-user-email?email=postman.user@example.com
+```
+
+Expected status:
+
+```text
+200 OK
+```
+
+Expected result:
+
+```text
+Returns only tasks belonging to the user with the given email.
+```
+
+### 10. Update Task Status
+
+```http
+PATCH /api/v1/tasks/9/status
+```
+
+Body:
 
 ```json
 {
@@ -251,15 +529,121 @@ Example body:
 }
 ```
 
-Delete task:
+Expected status:
+
+```text
+200 OK
+```
+
+Example response:
+
+```json
+{
+  "id": 9,
+  "title": "Test task from Postman",
+  "description": "This task was created while testing the API in Postman.",
+  "status": "in_progress",
+  "user_id": 5
+}
+```
+
+### 11. Invalid Task Status Validation
 
 ```http
-DELETE /tasks/{task_id}
+PATCH /api/v1/tasks/9/status
+```
+
+Body:
+
+```json
+{
+  "status": "completed"
+}
+```
+
+Expected status:
+
+```text
+422 Unprocessable Content
+```
+
+Reason:
+
+```text
+Only pending, in_progress, and done are valid status values.
+```
+
+### 12. Create Task With Invalid User
+
+```http
+POST /api/v1/tasks
+```
+
+Body:
+
+```json
+{
+  "title": "Invalid user task",
+  "description": "This should fail because user does not exist.",
+  "user_id": 99999
+}
+```
+
+Expected status:
+
+```text
+400 Bad Request
+```
+
+Example response:
+
+```json
+{
+  "detail": "User with this ID does not exist"
+}
+```
+
+### 13. Delete Task
+
+```http
+DELETE /api/v1/tasks/9
+```
+
+Expected status:
+
+```text
+204 No Content
+```
+
+Expected response body:
+
+```text
+Empty
+```
+
+### 14. Delete Task Not Found
+
+```http
+DELETE /api/v1/tasks/99999
+```
+
+Expected status:
+
+```text
+404 Not Found
+```
+
+Example response:
+
+```json
+{
+  "detail": "Task Not Found"
+}
 ```
 
 ## Git Workflow Used
 
-Feature branches:
+Feature branches used during development:
 
 ```text
 feature/basic-fastapi-app
@@ -271,13 +655,19 @@ feature/database-setup
 feature/database-models
 feature/create-db-tables
 feature/use-database
+feature/api-versioning
+feature/frontend-env-config
+feature/user-task-view-polish
 docs/backend-setup
+docs/frontend-usage
+docs/postman-api-docs
 ```
 
 Common workflow:
 
 ```powershell
 git checkout main
+git pull origin main
 git checkout -b feature/branch-name
 git add .
 git commit -m "Meaningful commit message"
@@ -291,7 +681,10 @@ git push origin main
 
 - `.env` is ignored by Git because it contains local secrets.
 - `.env.example` is committed as a safe template.
+- `frontend/.env` is ignored by Git because frontend environment values can change per machine.
+- `frontend/.env.example` is committed as a safe frontend template.
 - PostgreSQL must be running before starting the API.
 - Docker Compose setup is planned, but local PostgreSQL is currently used.
-- The frontend runs on `http://localhost:5173` and calls the backend at `http://127.0.0.1:8000`.
-
+- The frontend runs on `http://localhost:5173`.
+- The backend runs on `http://127.0.0.1:8001`.
+- The frontend calls the backend through `VITE_API_BASE_URL`.
