@@ -1,6 +1,6 @@
 # Task Manager App
 
-A learning-focused full-stack task manager built with FastAPI, React, and PostgreSQL.
+A learning-focused full-stack task manager built with FastAPI, React, PostgreSQL, and JWT authentication.
 
 ## Tech Stack
 
@@ -8,6 +8,8 @@ A learning-focused full-stack task manager built with FastAPI, React, and Postgr
 - Database: PostgreSQL
 - ORM: SQLAlchemy
 - Validation: Pydantic
+- Authentication: JWT access and refresh tokens
+- Password Hashing: passlib with bcrypt
 - Frontend: React
 - Version Control: Git and GitHub
 
@@ -15,14 +17,15 @@ A learning-focused full-stack task manager built with FastAPI, React, and Postgr
 
 The application currently supports:
 
-- Create users
-- Find users by email
-- Create tasks
-- List tasks
-- View tasks by user email
-- Filter tasks by status
-- Update task status
-- Delete tasks
+- User registration with hashed passwords
+- User login with JWT access and refresh tokens
+- Protected current-user route
+- Refresh access token using refresh token
+- Create tasks for the logged-in user
+- List logged-in user's tasks
+- Filter logged-in user's tasks by status
+- Update logged-in user's task status
+- Delete logged-in user's tasks
 - Store users and tasks in PostgreSQL
 - React frontend connected to FastAPI backend
 
@@ -34,11 +37,14 @@ app/
   api/
     router.py
     v1/
+      auth.py
       router.py
       users.py
       tasks.py
   core/
     config.py
+    dependencies.py
+    security.py
   db/
     base.py
     session.py
@@ -46,6 +52,7 @@ app/
     user.py
     task.py
   schemas/
+    auth.py
     user.py
     task.py
   services/
@@ -64,7 +71,7 @@ scripts/
 - `app/main.py`: FastAPI application entry point.
 - `app/api/`: API routing setup.
 - `app/api/v1/`: Version 1 API route files.
-- `app/core/`: Application configuration.
+- `app/core/`: Application configuration, security helpers, and dependencies.
 - `app/db/`: Database base and session setup.
 - `app/models/`: SQLAlchemy database table models.
 - `app/schemas/`: Pydantic request and response schemas.
@@ -219,13 +226,33 @@ http://127.0.0.1:8001/api/v1
 GET /
 ```
 
-### Users
+### Auth
 
-Create user:
+Register user:
 
 ```http
 POST /api/v1/users
 ```
+
+Login:
+
+```http
+POST /api/v1/auth/login
+```
+
+Get current user:
+
+```http
+GET /api/v1/auth/me
+```
+
+Refresh access token:
+
+```http
+POST /api/v1/auth/refresh
+```
+
+### Users
 
 List users:
 
@@ -247,13 +274,13 @@ Create task:
 POST /api/v1/tasks
 ```
 
-List tasks:
+List logged-in user's tasks:
 
 ```http
 GET /api/v1/tasks
 ```
 
-Filter tasks by status:
+Filter logged-in user's tasks by status:
 
 ```http
 GET /api/v1/tasks?status=pending
@@ -265,12 +292,6 @@ Allowed statuses:
 pending
 in_progress
 done
-```
-
-Get tasks by user email:
-
-```http
-GET /api/v1/tasks/by-user-email?email={email}
 ```
 
 Update task status:
@@ -299,6 +320,44 @@ Base API URL:
 http://127.0.0.1:8001/api/v1
 ```
 
+## Authentication Testing Guide
+
+Authentication is implemented using JWT access and refresh tokens.
+
+### Token Types
+
+Access token:
+
+```text
+Used to access protected API routes.
+Short-lived.
+Sent in the Authorization header.
+```
+
+Refresh token:
+
+```text
+Used to generate a new access token.
+Longer-lived.
+Only sent to the refresh endpoint.
+```
+
+### Authorization Header Format
+
+For protected routes, use:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+In Postman:
+
+1. Open the request.
+2. Go to the Authorization tab.
+3. Select Bearer Token.
+4. Paste only the access token.
+5. Do not include the word Bearer manually.
+
 ### 1. Root Health Check
 
 ```http
@@ -325,18 +384,25 @@ Expected response:
 }
 ```
 
-### 2. Create User
+### 2. Register User
 
 ```http
 POST /api/v1/users
+```
+
+URL:
+
+```text
+http://127.0.0.1:8001/api/v1/users
 ```
 
 Body:
 
 ```json
 {
-  "name": "Postman User",
-  "email": "postman.user@example.com"
+  "name": "JWT Test User",
+  "email": "jwt.user@example.com",
+  "password": "test123"
 }
 ```
 
@@ -350,100 +416,173 @@ Example response:
 
 ```json
 {
-  "id": 5,
-  "name": "Postman User",
-  "email": "postman.user@example.com"
+  "id": 6,
+  "name": "JWT Test User",
+  "email": "jwt.user@example.com"
 }
 ```
 
-### 3. List Users
-
-```http
-GET /api/v1/users
-```
-
-Expected status:
+Note:
 
 ```text
-200 OK
+The password is never returned in the API response.
+The backend stores only hashed_password in the database.
 ```
 
-Example response:
-
-```json
-[
-  {
-    "id": 5,
-    "name": "Postman User",
-    "email": "postman.user@example.com"
-  }
-]
-```
-
-### 4. Get User By Email
+### 3. Login
 
 ```http
-GET /api/v1/users/by-email?email=postman.user@example.com
+POST /api/v1/auth/login
 ```
 
-Expected status:
+URL:
 
 ```text
-200 OK
-```
-
-Example response:
-
-```json
-{
-  "id": 5,
-  "name": "Postman User",
-  "email": "postman.user@example.com"
-}
-```
-
-### 5. Duplicate User Email Validation
-
-```http
-POST /api/v1/users
+http://127.0.0.1:8001/api/v1/auth/login
 ```
 
 Body:
 
 ```json
 {
-  "name": "Postman User",
-  "email": "postman.user@example.com"
+  "email": "jwt.user@example.com",
+  "password": "test123"
 }
 ```
 
 Expected status:
 
 ```text
-400 Bad Request
+200 OK
+```
+
+Expected response:
+
+```json
+{
+  "access_token": "jwt_access_token_here",
+  "refresh_token": "jwt_refresh_token_here",
+  "token_type": "bearer"
+}
+```
+
+### 4. Get Current User
+
+```http
+GET /api/v1/auth/me
+```
+
+URL:
+
+```text
+http://127.0.0.1:8001/api/v1/auth/me
+```
+
+Authorization:
+
+```text
+Bearer Token: access_token
+```
+
+Expected status:
+
+```text
+200 OK
 ```
 
 Example response:
 
 ```json
 {
-  "detail": "User with this email already exists"
+  "id": 6,
+  "name": "JWT Test User",
+  "email": "jwt.user@example.com"
 }
 ```
 
-### 6. Create Task
+### 5. Refresh Access Token
+
+```http
+POST /api/v1/auth/refresh
+```
+
+URL:
+
+```text
+http://127.0.0.1:8001/api/v1/auth/refresh
+```
+
+Body:
+
+```json
+{
+  "refresh_token": "jwt_refresh_token_here"
+}
+```
+
+Expected status:
+
+```text
+200 OK
+```
+
+Expected response:
+
+```json
+{
+  "access_token": "new_jwt_access_token_here",
+  "token_type": "bearer"
+}
+```
+
+### 6. Invalid Refresh Token Test
+
+Use an access token in place of a refresh token:
+
+```json
+{
+  "refresh_token": "jwt_access_token_here"
+}
+```
+
+Expected status:
+
+```text
+401 Unauthorized
+```
+
+Expected response:
+
+```json
+{
+  "detail": "Invalid refresh token"
+}
+```
+
+Reason:
+
+```text
+The refresh endpoint accepts only tokens with type refresh.
+```
+
+### 7. Create Task
 
 ```http
 POST /api/v1/tasks
 ```
 
+Authorization:
+
+```text
+Bearer Token: access_token
+```
+
 Body:
 
 ```json
 {
-  "title": "Test task from Postman",
-  "description": "This task was created while testing the API in Postman.",
-  "user_id": 5
+  "title": "Protected task",
+  "description": "Created using JWT user"
 }
 ```
 
@@ -457,18 +596,31 @@ Example response:
 
 ```json
 {
-  "id": 9,
-  "title": "Test task from Postman",
-  "description": "This task was created while testing the API in Postman.",
+  "id": 10,
+  "title": "Protected task",
+  "description": "Created using JWT user",
   "status": "pending",
-  "user_id": 5
+  "user_id": 6
 }
 ```
 
-### 7. List Tasks
+Note:
+
+```text
+Do not send user_id while creating a task.
+The backend gets the user_id from the JWT token.
+```
+
+### 8. List Logged-In User's Tasks
 
 ```http
 GET /api/v1/tasks
+```
+
+Authorization:
+
+```text
+Bearer Token: access_token
 ```
 
 Expected status:
@@ -477,10 +629,22 @@ Expected status:
 200 OK
 ```
 
-### 8. Filter Tasks By Status
+Expected result:
+
+```text
+Returns only tasks belonging to the logged-in user.
+```
+
+### 9. Filter Logged-In User's Tasks By Status
 
 ```http
 GET /api/v1/tasks?status=pending
+```
+
+Authorization:
+
+```text
+Bearer Token: access_token
 ```
 
 Allowed status values:
@@ -497,28 +661,16 @@ Expected status:
 200 OK
 ```
 
-### 9. Get Tasks By User Email
-
-```http
-GET /api/v1/tasks/by-user-email?email=postman.user@example.com
-```
-
-Expected status:
-
-```text
-200 OK
-```
-
-Expected result:
-
-```text
-Returns only tasks belonging to the user with the given email.
-```
-
 ### 10. Update Task Status
 
 ```http
-PATCH /api/v1/tasks/9/status
+PATCH /api/v1/tasks/10/status
+```
+
+Authorization:
+
+```text
+Bearer Token: access_token
 ```
 
 Body:
@@ -539,18 +691,24 @@ Example response:
 
 ```json
 {
-  "id": 9,
-  "title": "Test task from Postman",
-  "description": "This task was created while testing the API in Postman.",
+  "id": 10,
+  "title": "Protected task",
+  "description": "Created using JWT user",
   "status": "in_progress",
-  "user_id": 5
+  "user_id": 6
 }
 ```
 
 ### 11. Invalid Task Status Validation
 
 ```http
-PATCH /api/v1/tasks/9/status
+PATCH /api/v1/tasks/10/status
+```
+
+Authorization:
+
+```text
+Bearer Token: access_token
 ```
 
 Body:
@@ -573,40 +731,16 @@ Reason:
 Only pending, in_progress, and done are valid status values.
 ```
 
-### 12. Create Task With Invalid User
+### 12. Delete Task
 
 ```http
-POST /api/v1/tasks
+DELETE /api/v1/tasks/10
 ```
 
-Body:
-
-```json
-{
-  "title": "Invalid user task",
-  "description": "This should fail because user does not exist.",
-  "user_id": 99999
-}
-```
-
-Expected status:
+Authorization:
 
 ```text
-400 Bad Request
-```
-
-Example response:
-
-```json
-{
-  "detail": "User with this ID does not exist"
-}
-```
-
-### 13. Delete Task
-
-```http
-DELETE /api/v1/tasks/9
+Bearer Token: access_token
 ```
 
 Expected status:
@@ -621,10 +755,16 @@ Expected response body:
 Empty
 ```
 
-### 14. Delete Task Not Found
+### 13. Delete Task Not Found
 
 ```http
 DELETE /api/v1/tasks/99999
+```
+
+Authorization:
+
+```text
+Bearer Token: access_token
 ```
 
 Expected status:
@@ -637,8 +777,43 @@ Example response:
 
 ```json
 {
-  "detail": "Task Not Found"
+  "detail": "Task not found"
 }
+```
+
+### 14. Protected Route Without Token
+
+```http
+GET /api/v1/tasks
+```
+
+Do not send a Bearer token.
+
+Expected status:
+
+```text
+401 Unauthorized
+```
+
+Reason:
+
+```text
+Task routes are protected and require a valid access token.
+```
+
+### Removed Old Task Lookup
+
+This old route is no longer used:
+
+```http
+GET /api/v1/tasks/by-user-email
+```
+
+Reason:
+
+```text
+After login, the backend identifies the user from the JWT token.
+Tasks should not be fetched by manually passing an email.
 ```
 
 ## Git Workflow Used
@@ -658,6 +833,10 @@ feature/use-database
 feature/api-versioning
 feature/frontend-env-config
 feature/user-task-view-polish
+feature/jwt-auth
+feature/protect-task-routes
+feature/frontend-auth
+feature/refresh-token
 docs/backend-setup
 docs/frontend-usage
 docs/postman-api-docs
@@ -688,3 +867,6 @@ git push origin main
 - The frontend runs on `http://localhost:5173`.
 - The backend runs on `http://127.0.0.1:8001`.
 - The frontend calls the backend through `VITE_API_BASE_URL`.
+- Access tokens are used for protected routes.
+- Refresh tokens are used only to generate new access tokens.
+- Passwords are hashed before being stored in the database.
