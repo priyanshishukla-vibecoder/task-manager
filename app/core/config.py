@@ -8,6 +8,8 @@ class Settings(BaseSettings): #A Pydantic class for reading environment variable
     secret_key: str = "change-this-secret-key"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    refresh_token_expire_minutes: int = 10080 #7days
+
 
 
 settings = Settings()
