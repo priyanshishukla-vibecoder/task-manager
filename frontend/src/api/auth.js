@@ -43,3 +43,18 @@ export async function getCurrentUser(token) {
 
   return handleResponse(response);
 }
+
+
+export async function refreshAccessToken(refreshToken) {
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      refresh_token: refreshToken,
+    }),
+  });
+
+  return handleResponse(response);
+}

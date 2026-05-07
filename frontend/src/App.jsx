@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { getCurrentUser, loginUser, registerUser } from './api/auth';
+import { getCurrentUser, loginUser, refreshAccessToken, registerUser } from './api/auth';
 import {
   createTask,
   deleteTask,
@@ -15,6 +15,7 @@ import './App.css';
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('accessToken'));
+  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem('refreshToken'));
   const [currentUser, setCurrentUser] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
@@ -26,18 +27,31 @@ function App() {
       return;
     }
 
+     try {
     const userData = await getCurrentUser(activeToken);
     setCurrentUser(userData);
+  } catch (error) {
+    const newAccessToken = await refreshSession();
+    const userData = await getCurrentUser(newAccessToken);
+    setCurrentUser(userData);
+  }
   }
 
   async function loadTasks(status = statusFilter, activeToken = token) {
-    if (!activeToken) {
-      return;
-    }
+  if (!activeToken) {
+    return;
+  }
 
+  try {
     const taskData = await getTasks(activeToken, status);
     setTasks(taskData);
+  } catch (error) {
+    const newAccessToken = await refreshSession();
+    const taskData = await getTasks(newAccessToken, status);
+    setTasks(taskData);
   }
+}
+
 
   async function handleSignup(userData) {
     try {
@@ -53,7 +67,9 @@ function App() {
     try {
       const data = await loginUser(credentials);
       localStorage.setItem('accessToken', data.access_token);
+      localStorage.setItem('refreshToken', data.refresh_token);
       setToken(data.access_token);
+      setRefreshToken(data.refresh_token);
       setMessage('Login successful');
       await loadCurrentUser(data.access_token);
       await loadTasks('', data.access_token);
@@ -64,7 +80,9 @@ function App() {
 
   function handleLogout() {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setToken(null);
+    setRefreshToken(null);    
     setCurrentUser(null);
     setTasks([]);
     setStatusFilter('');
@@ -101,6 +119,20 @@ function App() {
     }
   }
 
+async function refreshSession() {
+  if (!refreshToken) {
+    throw new Error('Please login again.');
+  }
+
+  const data = await refreshAccessToken(refreshToken);
+
+  localStorage.setItem('accessToken', data.access_token);
+  setToken(data.access_token);
+
+  return data.access_token;
+}
+
+
   async function handleStatusFilterChange(event) {
     const selectedStatus = event.target.value;
     setStatusFilter(selectedStatus);
@@ -118,7 +150,9 @@ function App() {
         await loadTasks('', token);
       } catch (error) {
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         setToken(null);
+        setRefreshToken(null);    
         setCurrentUser(null);
         setMessage('Session expired. Please login again.');
       }
