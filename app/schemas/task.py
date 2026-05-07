@@ -9,7 +9,7 @@ class TaskStatus(str, Enum): # restricts status to only pending, in-progress don
 class TaskCreate(BaseModel):
     title: str = Field(min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
-    user_id: int
+
 
 class TaskStatusUpdate(BaseModel):
     status: TaskStatus

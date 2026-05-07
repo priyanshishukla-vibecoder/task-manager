@@ -7,11 +7,12 @@ from app.services.task_service import (
     create_task,
     delete_task,
     get_tasks,
-    get_tasks_by_user_id,
     update_task_status,
 )
 
-from app.services.user_service import get_user_by_email, get_user_by_id
+from app.core.dependencies import get_current_user
+from app.models.user import User
+
 
 
 
@@ -26,44 +27,23 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
     summary="Create task"
 )
-def create_task_endpoint(task_data: TaskCreate, db: Session=Depends(get_db)) -> TaskResponse:
-   
-    user=get_user_by_id(db, task_data.user_id)
+def create_task_endpoint(
+    task_data: TaskCreate, 
+    db: Session=Depends(get_db), 
+    current_user: User=Depends(get_current_user)
+) -> TaskResponse:
     
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this ID does not exist"
-        )
-    
-    return create_task(db, task_data)
+    return create_task(db, task_data, current_user.id)
 
 
 @router.get("", response_model=list[TaskResponse], summary="List tasks")
 def get_tasks_endpoint(
     status_filter: TaskStatus | None = Query(default=None, alias="status"),
-    db: Session=Depends(get_db)
+    db: Session=Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[TaskResponse]:
-    return get_tasks(db, status_filter) 
 
-@router.get(
-    "/by-user-email",
-    response_model=list[TaskResponse],
-    summary="List tasks by user email",
-)
-def get_tasks_by_user_email_endpoint(
-    email: str,
-    db: Session = Depends(get_db),
-) -> list[TaskResponse]:
-    user = get_user_by_email(db, email)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
-    return get_tasks_by_user_id(db, user.id)
+    return get_tasks(db, current_user.id, status_filter) 
 
 
 @router.patch(
@@ -75,11 +55,12 @@ def update_task_status_endpoint(
     
     task_id: int, 
     status_data: TaskStatusUpdate, 
-    db: Session=Depends(get_db)
+    db: Session=Depends(get_db),
+    current_user: User=Depends(get_current_user),
 ) -> TaskResponse:
 
 
-    task = update_task_status(db, task_id, status_data.status)
+    task = update_task_status(db, task_id, status_data.status, current_user.id)
 
     if task is None:
         raise HTTPException(
@@ -96,9 +77,10 @@ def update_task_status_endpoint(
 )
 def delete_task_endpoint(
     task_id: int,
-    db: Session=Depends(get_db)
+    db: Session=Depends(get_db),
+    current_user: User=Depends(get_current_user)    
 )->None:
-    is_deleted= delete_task(db, task_id)
+    is_deleted= delete_task(db, task_id, current_user.id)
 
     if not is_deleted:
         raise HTTPException(
