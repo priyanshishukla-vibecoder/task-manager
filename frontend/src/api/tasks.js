@@ -1,73 +1,64 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+async function handleResponse(response) {
+  const data = await response.json().catch(() => null);
 
+  if (!response.ok) {
+    throw new Error(data?.detail || 'Something went wrong');
+  }
 
-export async function getTasks(status) {
+  return data;
+}
+
+function authHeaders(token) {
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+}
+
+export async function getTasks(token, status = '') {
   const query = status ? `?status=${status}` : '';
-  const response = await fetch(`${API_BASE_URL}/tasks${query}`);
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch tasks');
-  }
+  const response = await fetch(`${API_BASE_URL}/tasks${query}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-  return response.json();
+  return handleResponse(response);
 }
 
-export async function getTasksByUserEmail(email) {
-  const response = await fetch(
-    `${API_BASE_URL}/tasks/by-user-email?email=${encodeURIComponent(email)}`,
-  );
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to fetch user tasks');
-  }
-
-  return response.json();
-}
-
-
-export async function createTask(taskData) {
+export async function createTask(token, taskData) {
   const response = await fetch(`${API_BASE_URL}/tasks`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(taskData),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to create task');
-  }
-
-  return response.json();
+  return handleResponse(response);
 }
 
-export async function updateTaskStatus(taskId, status) {
+export async function updateTaskStatus(token, taskId, status) {
   const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/status`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify({ status }),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to update task');
-  }
-
-  return response.json();
+  return handleResponse(response);
 }
 
-export async function deleteTask(taskId) {
+export async function deleteTask(token, taskId) {
   const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
     method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to delete task');
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.detail || 'Something went wrong');
   }
 }

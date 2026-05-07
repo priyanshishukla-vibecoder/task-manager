@@ -291,3 +291,35 @@ button:disabled {
     justify-content: flex-start;
   }
 }
+
+.auth-layout {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+}
+
+.auth-switch-text {
+  margin: 14px 0 0;
+  color: #4b5563;
+  text-align: center;
+}
+
+.link-button {
+  border: 0;
+  padding: 0;
+  color: #2563eb;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
-function TaskForm({ onCreateTask }) {
+function LoginForm({ onLogin }) {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+    email: '',
+    password: '',
   });
 
   function handleChange(event) {
@@ -17,44 +17,38 @@ function TaskForm({ onCreateTask }) {
 
   function handleSubmit(event) {
     event.preventDefault();
-
-    onCreateTask({
-      title: formData.title,
-      description: formData.description || null,
-    });
-
-    setFormData({
-      title: '',
-      description: '',
-    });
+    onLogin(formData);
   }
 
   return (
     <form className="form" onSubmit={handleSubmit}>
-      <h2>Create Task</h2>
+      <h2>Login</h2>
 
       <label>
-        Title
+        Email
         <input
-          name="title"
-          value={formData.title}
+          name="email"
+          type="email"
+          value={formData.email}
           onChange={handleChange}
           required
         />
       </label>
 
       <label>
-        Description
-        <textarea
-          name="description"
-          value={formData.description}
+        Password
+        <input
+          name="password"
+          type="password"
+          value={formData.password}
           onChange={handleChange}
+          required
         />
       </label>
 
-      <button type="submit">Create Task</button>
+      <button type="submit">Login</button>
     </form>
   );
 }
 
-export default TaskForm;
+export default LoginForm;
