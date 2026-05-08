@@ -15,7 +15,7 @@ class Task(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(nullable=False)
-    description: Mapped[str | None] = mapped_column(nullable=False)
+    description: Mapped[str | None] = mapped_column(nullable=True)
     status: Mapped[TaskStatus] = mapped_column(default=TaskStatus.pending)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
