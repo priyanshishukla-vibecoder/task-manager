@@ -1,5 +1,5 @@
 from enum import Enum
-
+from app.schemas.task import TaskStatus, TaskPriority
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +17,8 @@ class Task(Base):
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str | None] = mapped_column(nullable=True)
     status: Mapped[TaskStatus] = mapped_column(default=TaskStatus.pending)
+    priority : Mapped[TaskPriority] = mapped_column(default= TaskPriority.medium, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    
 
     owner: Mapped["User"] = relationship(back_populates="tasks")
