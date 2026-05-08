@@ -13,7 +13,8 @@ def create_task(db: Session, task_data: TaskCreate, user_id: int) -> Task:
     task = Task(
         title=task_data.title,
         description=task_data.description,
-        user_id=user_id
+        user_id=user_id,
+        priority=task_data.priority
     )
 
     db.add(task)

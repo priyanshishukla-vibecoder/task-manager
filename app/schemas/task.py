@@ -5,7 +5,8 @@ class TaskStatus(str, Enum): # restricts status to only pending, in-progress don
     pending = "pending"
     in_progress = "in_progress"
     done= "done"
-    
+
+
 class TaskPriority(str, Enum)   : # restricts priority to only low, medium, high
     low = "low"
     medium = "medium"

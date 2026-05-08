@@ -4,6 +4,7 @@ function TaskForm({ onCreateTask }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    priority: 'medium',
   });
 
   function handleChange(event) {
@@ -21,11 +22,13 @@ function TaskForm({ onCreateTask }) {
     onCreateTask({
       title: formData.title,
       description: formData.description || null,
+      priority: formData.priority,
     });
 
     setFormData({
       title: '',
       description: '',
+      priority: 'medium', 
     });
   }
 
@@ -51,6 +54,18 @@ function TaskForm({ onCreateTask }) {
           onChange={handleChange}
         />
       </label>
+<label>
+  Priority
+  <select
+    name="priority"
+    value={formData.priority}
+    onChange={handleChange}
+  >
+    <option value="low">low</option>
+    <option value="medium">medium</option>
+    <option value="high">high</option>
+  </select>
+</label>
 
       <button type="submit">Create Task</button>
     </form>

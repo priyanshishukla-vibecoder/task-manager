@@ -27,6 +27,9 @@ function TaskList({ tasks, onUpdateStatus, onDeleteTask }) {
                 <h3>{task.title}</h3>
                 <p>{task.description || 'No description added.'}</p>
               </div>
+<span className={`priority-badge priority-${task.priority}`}>
+  {task.priority}
+</span>
 
               <div className="task-row-actions">
                 <select
